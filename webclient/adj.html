@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ADJ Fog Fury Jett</title>
+  <meta name="viewport" content="width=device-width, initial-scale=2">
+  <style>
+    .textfield{width: 25px;}
+    div {margin-bottom: 8px;}
+  </style>
+</head>
+<body>
+
+<div>
+  <input type="button" value="Kör Färg" id="btn">
+  <input type="button" value="Kör Eld" id="btn2">
+</div>
+
+<div>
+  R<input type="text" id="red" value="255" class="textfield">
+  G<input type="text" id="green" value="255" class="textfield">
+  B<input type="text" id="blue" value="255" class="textfield">
+</div>
+
+<div>
+  <input type="button" value="Stopp" id="stop">
+  <input type="button" value="Ping" id="ping">
+</div>
+
+<div>
+    <input type="button" value="Ström På" id="poweron">
+    <input type="button" value="Ström Av" id="poweroff">
+</div>
+
+
+<div id="log" style="white-space: pre; font-family: monospace;">
+
+</div>
+
+<script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+<script type="text/javascript">
+var connected = false;
+var sock = new WebSocket("ws://jiihon.com:9997");
+
+sock.onopen = function (event) {
+  sock.send("LZ6T4DUq\n")
+  connected = true;
+};
+
+sock.onmessage = function (event) {
+  $("#log").text(event.data);
+}
+
+$("#btn").click(function() {
+  if(connected) {
+    var r = $("#red").val();
+    var g = $("#green").val();
+    var b = $("#blue").val();
+    var cmd = "1 255\n2 "+r+"\n3 "+g+"\n4 "+b+"\n5 0\n"
+    console.log(cmd)
+    sock.send(cmd);
+  }
+});
+
+$("#btn2").click(function() {
+  if(connected) {
+    sock.send("1 255\n2 0\n3 0\n4 0\n5 255\n");
+  }
+});
+
+$("#stop").click(function() {
+  if(connected) {
+    sock.send("1 0\n");
+  }
+});
+
+$("#ping").click(function() {
+  if(connected) {
+    sock.send("PING\n");
+  }
+});
+
+$("#poweron").click(function() {
+  if(connected) {
+    sock.send("1\n");
+  }
+});
+
+$("#poweroff").click(function() {
+  if(connected) {
+    sock.send("0\n");
+  }
+});
+
+
+</script>
+
+</body>
+</html>
