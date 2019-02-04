@@ -34,6 +34,12 @@ class MainWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         self.strobeOnBtn.clicked.connect(self.strobespeedChanged)
         self.strobePulseBtn.clicked.connect(self.strobespeedChanged)
         self.strobeRandomBtn.clicked.connect(self.strobespeedChanged)
+        self.floodlightOff.clicked.connect(self.floodlight)
+        self.floodlightOn.clicked.connect(self.floodlight)
+        self.floodlightSlow.clicked.connect(self.floodlight)
+        self.floodlightFast.clicked.connect(self.floodlight)
+        self.floodlightUltra.clicked.connect(self.floodlight)
+
 
     def connectionCheck(self):
         global sock, connectionStatus
@@ -133,6 +139,18 @@ class MainWindow(QtWidgets.QMainWindow, ui.Ui_MainWindow):
         elif self.strobeRandomBtn.isChecked():
             smoke.setStrobe(self.strobeslider.value()+160)
 
+    def floodlight(self):
+        if self.floodlightOn.isChecked():
+            smoke.setFloodlight(255,0)
+        elif self.floodlightOff.isChecked():
+            smoke.setFloodlight(0,255)
+        elif self.floodlightSlow.isChecked():
+            smoke.setFloodlight(5,25)
+        elif self.floodlightFast.isChecked():
+            smoke.setFloodlight(8,8)
+        elif self.floodlightUltra.isChecked():
+            smoke.setFloodlight(2,4)
+
 
 class SmokeControl():
     def __init__(self):
@@ -176,6 +194,11 @@ class SmokeControl():
         command += "5 "+str(self.amber)  +"\n"
         command += "6 "+str(self.strobe) +"\n"
         command += "7 "+str(self.dimmer) +"\n"
+        self.send(command)
+
+    def setFloodlight(self, ontime, offtime):
+        command  = "8 "+str(ontime)      +"\n"
+        command += "9 "+str(offtime)     +"\n"
         self.send(command)
 
     def send(self, command):
