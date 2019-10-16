@@ -29,6 +29,8 @@ WiFiClient client;
 void setup() {
   Serial.begin(115200);
   pinMode(STROBO_PIN, OUTPUT);
+  digitalWrite(STROBO_PIN, HIGH);
+  set_timer(&ontimer, ontime);
 
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -41,13 +43,20 @@ void setup() {
   Serial.println(""); Serial.println("WiFi connected");
   Serial.println("IP address: "); Serial.println(WiFi.localIP());
 
+  digitalWrite(STROBO_PIN, LOW);
+  delay(50);
+  digitalWrite(STROBO_PIN, HIGH);
+
   while (!client.connect(server, 9999)) {}
   Serial.println("Connected to "); Serial.println(server);
   client.print("cbsZ\n"); //Transmit password
 
+  digitalWrite(STROBO_PIN, LOW);
+  delay(50);
+  digitalWrite(STROBO_PIN, HIGH);
+
   set_timer(&pingtime, 60000);
   set_timer(&reconnecttime, 3600000);
-  set_timer(&ontimer, ontime);
 }
 
 
