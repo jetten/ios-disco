@@ -54,10 +54,9 @@ void setup() {
   Udp.begin(9996);
 
   //Serial.begin(9600);
-  /*while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only
-  }*/
-
+  //while (!Serial) {
+      // wait for serial port to connect. Needed for Leonardo only
+  //}
   //Serial.println(Ethernet.localIP());
 
   while (!client.connect(server, 9999)) {}
@@ -66,7 +65,7 @@ void setup() {
 
   // Enable DMX master interface and start transmitting
   dmx_master.enable();
-  
+
   set_timer(&pingtime, 60000);
   set_timer(&reconnecttime, 3600000);
 }
@@ -134,8 +133,12 @@ void loop()
     }
 
     if (dataready) {
-      dmx_master.setChannelValue (dmxchannel, dmxvalue );
-      dmxvalues[dmxchannel-1] = dmxvalue;
+      if (dmxchannel<=DMX_MASTER_CHANNELS && dmxchannel>0) { // Conceptinetics will crash if we write data to not initialized channel
+        //Serial.print("Writing channel "); Serial.print(dmxchannel); Serial.print("... ");
+        dmx_master.setChannelValue (dmxchannel, dmxvalue );
+        dmxvalues[dmxchannel-1] = dmxvalue;
+        //Serial.println("OK");
+      }
       dataready = false;
 
       // Smoke output active, start timer
@@ -149,7 +152,7 @@ void loop()
       }
     }
   }
-  
+
 
   // Timer handlers
   if(timer(&pingtime)) {
@@ -167,7 +170,7 @@ void loop()
     }
     set_timer(&pingtime, 60000);
   }
-  
+
   if(smokeon && timer(&smoketime)) {
     // Turn off smoke output
     dmx_master.setChannelValue(1, 0);
@@ -175,17 +178,17 @@ void loop()
     smokeon = false;
     log("Timer turned off smoke\n");
   }
-  
+
   if(digitalRead(POWERCTRL_PIN)==HIGH && timer(&powerontime)) {
     digitalWrite(POWERCTRL_PIN, LOW);
     log("Timer turned off power\n");
   }
-  
+
   if(timer(&reconnecttime)) {
     reconnect();
     set_timer(&reconnecttime, 3600000);
   }
-  
+
   if (!client.connected()) {
     reconnect();
   }
@@ -223,10 +226,10 @@ void reconnect() {
 boolean timer(unsigned long *trigger)
 {
   if (*trigger && (long)(millis() - *trigger) >= 0)
-  {  
+  {
     *trigger = 0;
     return true;
-  }  
+  }
   else
     return false;
 }
