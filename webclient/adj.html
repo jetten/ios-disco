@@ -32,6 +32,15 @@
     <input type="button" value="Ström Av" id="poweroff">
 </div>
 
+<div>
+  <input type="button" value="Lampa på" id="floodlightOn">
+  <input type="button" value="Lampa av" id="floodlightOff">
+</div>
+
+<div>
+  <input type="button" value="Puls" id="floodlightPulse">
+  <input type="button" value="Strobo" id="floodlightStroboFast">
+</div>
 
 <div id="log" style="white-space: pre; font-family: monospace;">
 
@@ -41,6 +50,7 @@
 <script type="text/javascript">
 var connected = false;
 var sock = new WebSocket("ws://jiihon.com:9997");
+var offtimer;
 
 sock.onopen = function (event) {
   sock.send("LZ6T4DUq\n")
@@ -92,6 +102,34 @@ $("#poweroff").click(function() {
   }
 });
 
+$("#floodlightOn").click(function() {
+  if(connected) {
+    sock.send("8 255\n9 0\n");
+  }
+});
+
+$("#floodlightOff").click(function() {
+  if(connected) {
+    sock.send("8 0\n9 255\n");
+  }
+});
+
+$("#floodlightPulse").click(function() {
+  if(connected) {
+    clearTimeout(offtimer);
+    sock.send("8 5\n9 255\n");
+
+    offtimer = setTimeout(function() {
+      sock.send("8 0\n9 255\n");
+    }, 1000);
+  }
+});
+
+$("#floodlightStroboFast").click(function() {
+  if(connected) {
+    sock.send("8 3\n9 9\n");
+  }
+});
 
 </script>
 
