@@ -2,6 +2,9 @@
 Server software to forward commands from controllers (`desktop_client` and `webclient`)
 to lighting fixtures (`dmx_receiver` and `strobo_receiver`).
 
+## go_server
+Contains the same features as python_server, but rewritten in Go.
+
 ## desktop_client
 Desktop client written in Python and Qt to generate the commands for controlling a DMX fixture and stroboscope.
 
