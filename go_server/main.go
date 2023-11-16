@@ -45,14 +45,26 @@ func broadcaster() {
 		select {
 		case msg := <-ctrlmessages:
 			for client := range iotClients {
-				client <- msg
+				select {
+				case client <- msg:
+				default:
+					fmt.Println("Send to iotClient blocked")
+				}
 			}
 		case msg := <-iotmessages:
 			for client := range ctrlClients {
-				client <- msg
+				select {
+				case client <- msg:
+				default:
+					fmt.Println("Send to ctrlClient blocked")
+				}
 			}
 			for client := range wsClients {
-				client <- msg
+				select {
+				case client <- msg:
+				default:
+					fmt.Println("Send to wsClient blocked")
+				}
 			}
 		case client := <-iotentering:
 			iotClients[client] = true
@@ -120,13 +132,15 @@ func WebsocketServer(ws *websocket.Conn) {
 
 	go func() {
 		for {
-			data, err := reader.ReadString('\n')
+			bdata := make([]byte, 1024)
+			_, err := reader.Read(bdata)
 			if err != nil {
 				return
 			}
-			data, err = asciiToBin(data)
+			data, err := asciiToBin(string(bdata))
 			if err != nil {
 				fmt.Fprintln(ws, "NOK")
+				fmt.Printf("[%s] asciiToBin failed: %s\n", ws.Request().RemoteAddr, err)
 			} else if lockdown {
 				ctrlmessages <- data
 				fmt.Fprintln(ws, "LOCK"+fmt.Sprint(len(iotClients)))
@@ -181,11 +195,12 @@ func handleIotConn(conn net.Conn) {
 
 	go func() {
 		for {
-			data, err := reader.ReadString('\n')
+			bdata := make([]byte, 1024)
+			_, err := reader.Read(bdata)
 			if err != nil {
 				return
 			}
-			iotmessages <- data
+			iotmessages <- string(bdata)
 		}
 	}()
 
@@ -232,11 +247,12 @@ func handleCtrlConn(conn net.Conn) {
 	}()
 
 	for {
-		data, err := reader.ReadString('\n')
+		bdata := make([]byte, 1024)
+		_, err := reader.Read(bdata)
 		if err != nil {
 			return
 		}
-		data, err = asciiToBin(data)
+		data, err := asciiToBin(string(bdata))
 		if err != nil {
 			fmt.Fprintln(conn, "NOK")
 		} else if lockdown {
@@ -250,40 +266,40 @@ func handleCtrlConn(conn net.Conn) {
 }
 
 func asciiToBin(cmd string) (string, error) {
-	cmd, _, _ = strings.Cut(cmd, "\n")
-
-	if cmd == "PING" || cmd == "P" {
-		return "P", nil
-	} else if cmd == "0" || cmd == "1" {
-		if lockdown == true {
-			return "", nil
+	cmds := strings.Split(cmd, "\n")
+	cmds = cmds[:len(cmds)-1]
+	output := ""
+	for _, cmd = range cmds {
+		if cmd == "PING" || cmd == "P" {
+			return "P", nil
+		} else if cmd == "0" || cmd == "1" {
+			if lockdown == false {
+				output += cmd
+			}
+		} else if cmd == "L1" {
+			lockdown = true
+		} else if cmd == "L0" {
+			lockdown = false
+		} else if cmd == "L" {
+			output += cmd
 		} else {
-			return cmd, nil
-		}
-	} else if cmd == "L1" {
-		lockdown = true
-		return "", nil
-	} else if cmd == "L0" {
-		lockdown = false
-		return "", nil
-	} else if cmd == "L" {
-		return cmd, nil
-	} else {
-		values := strings.Split(cmd, " ")
-		if len(values) != 2 {
-			return "", errors.New("invalid number of arguments")
-		}
-		dmxchannel, dmxchannelerr := strconv.Atoi(values[0])
-		dmxvalue, dmxvalueerr := strconv.Atoi(values[1])
+			values := strings.Split(cmd, " ")
+			if len(values) != 2 {
+				return "", errors.New("invalid number of arguments")
+			}
+			dmxchannel, dmxchannelerr := strconv.Atoi(values[0])
+			dmxvalue, dmxvalueerr := strconv.Atoi(values[1])
 
-		if dmxchannel < 0 || dmxchannel >= 512 || dmxvalue < 0 || dmxvalue >= 256 || dmxchannelerr != nil || dmxvalueerr != nil {
-			return "", errors.New("invalid values")
-		}
+			if dmxchannel < 0 || dmxchannel >= 512 || dmxvalue < 0 || dmxvalue >= 256 || dmxchannelerr != nil || dmxvalueerr != nil {
+				return "", errors.New("invalid values")
+			}
 
-		output := []byte("   ")
-		output[0] = 'D' | byte(dmxchannel>>1)&128
-		output[1] = byte(dmxchannel) & 255
-		output[2] = byte(dmxvalue)
-		return string(output), nil
+			result := []byte("   ")
+			result[0] = 'D' | byte(dmxchannel>>1)&128
+			result[1] = byte(dmxchannel) & 255
+			result[2] = byte(dmxvalue)
+			output += string(result)
+		}
 	}
+	return output, nil
 }
